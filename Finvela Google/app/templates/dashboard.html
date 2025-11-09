@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+{% set total_Memos = Memos|length %}
+{% set stats = namespace(duplicates=0, verified=0, pending=0, risk_high=0, risk_medium=0, risk_low=0) %}
+{% for inv in Memos %}
+  {% if inv.duplicate_flag %}{% set stats.duplicates = stats.duplicates + 1 %}{% endif %}
+  {% if inv.status == 'pending' %}{% set stats.pending = stats.pending + 1 %}{% endif %}
+  {% if inv.gst_verify_status and inv.gst_verify_status.gst_status == 'verified' %}{% set stats.verified = stats.verified + 1 %}{% endif %}
+  {% if inv.risk_score is not none %}
+    {% if inv.risk_score >= 70 %}{% set stats.risk_high = stats.risk_high + 1 %}
+    {% elif inv.risk_score >= 40 %}{% set stats.risk_medium = stats.risk_medium + 1 %}
+    {% else %}{% set stats.risk_low = stats.risk_low + 1 %}{% endif %}
+  {% endif %}
+{% endfor %}
+
+<main class="dashboard-page py-4">
+  <section class="dashboard-hero card border-0 shadow-xl mb-4 overflow-hidden">
+    <div class="card-body p-4 p-lg-5">
+      <div class="row align-items-center g-4 g-lg-5">
+        <div class="col-lg-7">
+          <h1 class="display-6 fw-bold text-primary mb-3">Admin Control Hub</h1>
+          <p class="lead text-secondary mb-4">Monitor Memos intelligence, track dealer compliance, and resolve risks with a unified, real-time workspace tailored for finance leaders.</p>
+          <div class="d-flex flex-wrap gap-3">
+            <button class="btn btn-gradient btn-lg shadow-sm" type="button"><i class="bi bi-lightning-charge me-2"></i>Run Smart Checks</button>
+            <a class="btn btn-outline-primary btn-lg" href="{{ url_for('upload.upload') }}"><i class="bi bi-cloud-upload me-2"></i>Upload Memos</a>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="status-glass p-4 rounded-4">
+            <div class="d-flex align-items-center mb-3">
+              <span class="icon-circle gradient-1 me-3"><i class="bi bi-graph-up-arrow"></i></span>
+              <div>
+                <span class="text-uppercase text-white-50 small fw-semibold">Today’s Snapshot</span>
+                <h2 class="h3 text-white mb-0">{{ total_Memos }} Memos</h2>
+              </div>
+            </div>
+            <div class="row g-3 text-white-50">
+              <div class="col-6">
+                <div class="stat-chip">
+                  <span class="chip-label">Verified</span>
+                  <span class="chip-value">{{ stats.verified }}</span>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="stat-chip">
+                  <span class="chip-label">Pending</span>
+                  <span class="chip-value">{{ stats.pending }}</span>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="stat-chip">
+                  <span class="chip-label">Duplicates</span>
+                  <span class="chip-value" id="duplicate-total-count" data-initial-count="{{ stats.duplicates }}">{{ stats.duplicates }}</span>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="stat-chip">
+                  <span class="chip-label">Dealers</span>
+                  <span class="chip-value">{{ dealers|length }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4 d-flex align-items-center text-white-50 small gap-2">
+              <i class="bi bi-clock-history text-white"></i>
+              <span>Last sync: {{ last_sync|default('Just now') }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-3">
+          <div>
+            <h2 class="h4 fw-semibold text-primary mb-1">Advanced Filters</h2>
+            <p class="text-secondary mb-0">Refine the dataset to spotlight dealers, duplicates, or GST verification status.</p>
+          </div>
+          <div class="d-flex align-items-center gap-3 text-secondary small">
+            <span class="d-inline-flex align-items-center"><i class="bi bi-shield-check me-2 text-success"></i>Smart guard on</span>
+            <span class="d-inline-flex align-items-center"><i class="bi bi-bell me-2 text-warning"></i>Alerts muted</span>
+          </div>
+        </div>
+        <form method="get" class="row gy-3 gx-md-4 align-items-end dashboard-filters">
+          <div class="col-md-4">
+            <label class="form-label" for="dealer_id">Dealer</label>
+            <select class="form-select" id="dealer_id" name="dealer_id">
+              <option value="">All Dealers</option>
+              {% for dealer in dealers %}
+              <option value="{{ dealer.id }}" {% if request.args.get('dealer_id', type=int) == dealer.id %}selected{% endif %}>{{ dealer.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="duplicate">Duplicate</label>
+            <select class="form-select" id="duplicate" name="duplicate">
+              <option value="">All</option>
+              <option value="yes" {% if request.args.get('duplicate') == 'yes' %}selected{% endif %}>Yes</option>
+              <option value="no" {% if request.args.get('duplicate') == 'no' %}selected{% endif %}>No</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="gst_status">GST Status</label>
+            <select class="form-select" id="gst_status" name="gst_status">
+              <option value="">All</option>
+              <option value="verified" {% if request.args.get('gst_status') == 'verified' %}selected{% endif %}>Verified</option>
+              <option value="unverified" {% if request.args.get('gst_status') == 'unverified' %}selected{% endif %}>Unverified</option>
+              <option value="unknown" {% if request.args.get('gst_status') == 'unknown' %}selected{% endif %}>Unknown</option>
+            </select>
+          </div>
+          <div class="col-12 d-flex flex-wrap gap-3 justify-content-md-end mt-2">
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-soft-secondary"><i class="bi bi-arrow-counterclockwise me-2"></i>Reset</a>
+            <button type="submit" class="btn btn-gradient"><i class="bi bi-filter-circle me-2"></i>Apply Filters</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="row g-4 mb-4">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent py-3 d-flex justify-content-between align-items-center">
+          <div>
+            <h2 class="h5 fw-semibold mb-1">Memos Intelligence</h2>
+            <p class="text-secondary mb-0 small">Up-to-date records with risk and compliance visibility.</p>
+          </div>
+          <span class="badge rounded-pill bg-primary-subtle text-primary"><i class="bi bi-lightbulb me-1"></i>AI Insights</span>
+        </div>
+        <div class="table-responsive border-top">
+          <table class="table table-hover align-middle dashboard-table mb-0">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Dealer</th>
+                <th scope="col">Memos</th>
+                <th scope="col">Date</th>
+                <th scope="col">Status</th>
+                <th scope="col">Risk Score</th>
+                <th scope="col">Duplicate</th>
+                <th scope="col" class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for inv in Memos %}
+              <tr class="table-row-hover">
+                <td class="fw-semibold">#{{ inv.id }}</td>
+                <td>
+                  {% set dealer = inv.dealer %}
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="avatar bg-primary-subtle text-primary">{{ (dealer.name[0]|upper) if dealer and dealer.name else '?' }}</span>
+                    <div>
+                      <div class="fw-semibold">{{ dealer.name if dealer and dealer.name else 'Unknown dealer' }}</div>
+                      <small class="text-muted">{{ dealer.email if dealer and dealer.email else 'Dealerportal' }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-nowrap">{{ inv.extracted_fields.Memos_number if inv.extracted_fields else '—' }}</td>
+                <td class="text-nowrap">{{ inv.extracted_fields.Memos_date if inv.extracted_fields else '—' }}</td>
+                <td>
+                  <span class="badge rounded-pill text-dark status-pill status-pill--{{ inv.status|lower }}">{{ inv.status|title }}</span>
+                </td>
+                <td>
+                  {% if inv.risk_score is not none %}
+                  <div class="progress risk-progress text-dark" style="--risk-progress: {{ inv.risk_score }}%;" role="progressbar" aria-valuenow="{{ inv.risk_score }}" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar">{{ inv.risk_score }}</div>
+                  </div>
+                  {% else %}
+                  <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% set duplicate_state = 'duplicate' if inv.duplicate_flag else 'unique' %}
+                  <div class="d-flex flex-column gap-1">
+                    <span class="badge rounded-pill duplicate-status-pill {{ 'bg-danger-subtle text-danger' if duplicate_state == 'duplicate' else 'bg-success-subtle text-success' }}"
+                      data-duplicate-endpoint="{{ url_for('admin.manual_duplicate_check', Memos_id=inv.id) }}"
+                      data-Memos-id="{{ inv.id }}"
+                      data-default-state="{{ duplicate_state }}">
+                      {{ 'Duplicate' if duplicate_state == 'duplicate' else 'Unique' }}
+                    </span>
+                  </div>
+                </td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.Memos_detail', Memos_id=inv.id) }}"><i class="bi bi-eye"></i></a>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="9" class="text-center py-5">
+                  <div class="empty-state">
+                    <span class="icon-circle gradient-2 mb-3"><i class="bi bi-inboxes"></i></span>
+                    <h3 class="h5">No Memos match the selected filters.</h3>
+                    <p class="text-muted mb-0">Try adjusting your search or upload a new Memos to get started.</p>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h3 class="h6 fw-semibold mb-0">Risk Overview</h3>
+            <span class="badge bg-danger-subtle text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Live</span>
+          </div>
+          <ul class="list-unstyled mb-0 dashboard-list">
+            <li>
+              <span class="label">High risk</span>
+              <span class="value text-danger fw-semibold">{{ stats.risk_high }}</span>
+            </li>
+            <li>
+              <span class="label">Medium risk</span>
+              <span class="value text-warning fw-semibold">{{ stats.risk_medium }}</span>
+            </li>
+            <li>
+              <span class="label">Low risk</span>
+              <span class="value text-success fw-semibold">{{ stats.risk_low }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <h3 class="h6 fw-semibold mb-3">Workflow Shortcuts</h3>
+          <div class="d-grid gap-3">
+            <a class="shortcut-tile" href="{{ url_for('admin.dashboard') }}">
+              <div class="d-flex align-items-center gap-3">
+                <span class="icon-circle-sm"><i class="bi bi-arrow-repeat"></i></span>
+                <div>
+                  <h4 class="h6 mb-1">Refresh analytics</h4>
+                  <p class="small text-muted mb-0">Sync latest AI predictions and compliance checks.</p>
+                </div>
+              </div>
+            </a>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4 d-flex flex-column flex-lg-row align-items-lg-center gap-4">
+      <div class="flex-grow-1">
+        <h3 class="h5 fw-semibold text-primary mb-2">Need a human audit?</h3>
+        <p class="text-secondary mb-0">Schedule a review with our compliance specialists to deep-dive unusual Memos behavior before filing deadlines.</p>
+      </div>
+      <button class="btn btn-outline-primary btn-lg"><i class="bi bi-calendar-week me-2"></i>Book consultation</button>
+    </div>
+  </section>
+</main>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const statusClassMap = {
+      duplicate: ['bg-danger-subtle', 'text-danger'],
+      unique: ['bg-success-subtle', 'text-success'],
+      insufficient_data: ['bg-warning-subtle', 'text-warning']
+    };
+
+    const duplicateTotalElement = document.getElementById('duplicate-total-count');
+    const duplicateStates = new Map();
+    let duplicateTotal = 0;
+
+    const resetClasses = function (element, state) {
+      element.classList.remove('bg-danger-subtle', 'text-danger', 'bg-success-subtle', 'text-success', 'bg-warning-subtle', 'text-warning');
+      const classes = statusClassMap[state] || statusClassMap.unique;
+      if (Array.isArray(classes) && classes.length) {
+        element.classList.add(...classes);
+      }
+    };
+
+    const updateDuplicateTotal = function () {
+      if (duplicateTotalElement) {
+        duplicateTotalElement.textContent = String(Math.max(duplicateTotal, 0));
+      }
+    };
+
+    const pills = document.querySelectorAll('.duplicate-status-pill[data-duplicate-endpoint]');
+    if (!pills.length) {
+      updateDuplicateTotal();
+      return;
+    }
+
+    pills.forEach(function (pill) {
+      const MemosId = pill.dataset.MemosId;
+      if (!MemosId) {
+        return;
+      }
+      const initialState = (pill.dataset.defaultState || 'unique') === 'duplicate';
+      duplicateStates.set(MemosId, initialState);
+      if (initialState) {
+        duplicateTotal += 1;
+      }
+    });
+
+    updateDuplicateTotal();
+
+    const fetchChecks = function (pill) {
+      const endpoint = pill.dataset.duplicateEndpoint;
+      if (!endpoint) {
+        return;
+      }
+      const MemosId = pill.dataset.MemosId;
+      const reasonElement = document.getElementById('duplicate-reason-' + MemosId);
+      fetch(endpoint, { headers: { 'Accept': 'application/json' } })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+          }
+          return response.json();
+        })
+        .then(function (payload) {
+          if (!payload || payload.status !== 'success') {
+            throw new Error((payload && payload.message) || 'Unknown error');
+          }
+          const state = payload.is_duplicate ? 'duplicate' : 'unique';
+          pill.textContent = state === 'duplicate' ? 'Duplicate' : 'Unique';
+          resetClasses(pill, state);
+          if (MemosId) {
+            const isDuplicate = state === 'duplicate';
+            const previous = duplicateStates.get(MemosId) === true;
+            if (previous !== isDuplicate) {
+              duplicateStates.set(MemosId, isDuplicate);
+              duplicateTotal += isDuplicate ? 1 : -1;
+              updateDuplicateTotal();
+            }
+          }
+          if (reasonElement) {
+            reasonElement.classList.remove('text-danger');
+            if (!reasonElement.classList.contains('text-muted')) {
+              reasonElement.classList.add('text-muted');
+            }
+            const checks = Array.isArray(payload.checks) ? payload.checks : [];
+            let reason = '';
+            const duplicateCheck = checks.find(function (check) { return check.status === 'duplicate'; });
+            if (duplicateCheck && duplicateCheck.reason) {
+              reason = duplicateCheck.reason;
+            } else {
+              const informative = checks.find(function (check) { return check.reason; });
+              reason = informative ? informative.reason : '';
+            }
+            reasonElement.textContent = reason || 'No duplicate signals detected.';
+            if (checks.length && !reason) {
+              reasonElement.textContent = 'Duplicate rules evaluated with no notable findings.';
+            }
+          }
+        })
+        .catch(function (error) {
+          if (reasonElement) {
+            reasonElement.textContent = 'Duplicate analysis failed: ' + error.message;
+            reasonElement.classList.remove('text-muted');
+            reasonElement.classList.add('text-danger');
+          }
+        });
+    };
+
+    pills.forEach(fetchChecks);
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,480 @@
+{% extends 'base.html' %}
+{% block title %}Memos Details{% endblock %}
+{% block content %}
+{% macro format_value(value) -%}
+  {% if value is mapping %}
+    <pre class="mb-0">{{ value | tojson(indent=2) }}</pre>
+  {% elif value is sequence and value is not string %}
+    <pre class="mb-0">{{ value | tojson(indent=2) }}</pre>
+  {% else %}
+    {{ value if value is not none else '-' }}
+  {% endif %}
+{%- endmacro %}
+
+{% set extracted = Memos.extracted_fields or {} %}
+<main class="Memos-detail-page py-4">
+  <header class="Memos-hero card border-0 shadow-xl mb-4 overflow-hidden">
+    <div class="card-body p-4 p-lg-5">
+      <div class="row g-4 align-items-center">
+        <div class="col-lg-8">
+          <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+            <span class="badge rounded-pill bg-primary-subtle text-primary">
+              <i class="bi bi-file-earmark-text me-2"></i>Memos #{{ Memos.id }}
+            </span>
+            <span class="badge rounded-pill status-pill status-pill--{{ Memos.status|lower }}">{{ Memos.status|title }}</span>
+            <span id="duplicate-status-pill"
+              class="badge rounded-pill {{ 'bg-danger-subtle text-danger' if Memos.duplicate_flag else 'bg-success-subtle text-success' }}"
+              data-duplicate-state="{{ 'duplicate' if Memos.duplicate_flag else 'unique' }}">
+              <i class="bi bi-intersect me-1"></i>{{ 'Duplicate' if Memos.duplicate_flag else 'Unique' }}
+            </span>
+          </div>
+          <h1 class="display-6 fw-semibold text-primary mb-2">{{ Memos.dealer.name }}</h1>
+          <p class="text-secondary mb-4">Review extracted intelligence, risk signals, and compliance checks for this Memos. Use the quick actions to download the source file or return to your workflow.</p>
+          <div class="d-flex flex-wrap gap-3">
+            <a class="btn btn-gradient btn-lg shadow-sm" href="{{ url_for('admin.download_file', path=Memos.storage_path) }}"><i class="bi bi-download me-2"></i>Download original</a>
+            <a class="btn btn-outline-primary btn-lg" href="{{ url_for('admin.dashboard') }}"><i class="bi bi-arrow-left me-2"></i>Back to dashboard</a>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="Memos-scorecard p-4 rounded-4 text-white">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <span class="icon-circle gradient-2"><i class="bi bi-speedometer"></i></span>
+              <div>
+                <span class="text-uppercase small text-white-50">Risk Score</span>
+                <h2 class="display-6 mb-0">{{ Memos.risk_score or '—' }}</h2>
+              </div>
+            </div>
+            <div class="progress risk-progress" style="--risk-progress: {{ Memos.risk_score or 0 }}%;" role="progressbar" aria-valuenow="{{ Memos.risk_score or 0 }}" aria-valuemin="0" aria-valuemax="100">
+              <div class="progress-bar">{{ Memos.risk_score or '—' }}</div>
+            </div>
+            <ul class="list-unstyled mt-4 mb-0 Memos-stats">
+              <li><i class="bi bi-calendar-event me-2"></i><span>Processed on</span><strong>{{ Memos.created_at.strftime('%b %d, %Y %I:%M %p') if Memos.created_at else '—' }}</strong></li>
+              <li><i class="bi bi-hdd-network me-2"></i><span>Storage path</span><strong class="text-truncate d-inline-block" style="max-width: 220px;">{{ Memos.storage_path }}</strong></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="row g-4 mb-4">
+    <div class="col-lg-4">
+      <div class="info-card card border-0 shadow-sm h-100">
+        <div class="card-body p-4">
+          <h2 class="h5 fw-semibold mb-3">DealerOverview</h2>
+          <ul class="list-unstyled info-list mb-0">
+            <li><span>Dealer</span><strong>{{ Memos.dealer.name }}</strong></li>
+            <li><span>GSTIN</span><strong>{{ Memos.dealer.gstin or '—' }}</strong></li>
+            <li><span>Phone</span><strong>{{ Memos.dealer.phone or '—' }}</strong></li>
+            <li><span>Memos number</span><strong>{{ extracted.get('Memos_number') or '—' }}</strong></li>
+            <li><span>Memos date</span><strong>{{ extracted.get('Memos_date') or '—' }}</strong></li>
+            <li><span>Total amount</span><strong>{{ extracted.get('total_amount') or '—' }}</strong></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h5 fw-semibold mb-0">Extraction Summary</h2>
+            {% if extracted %}
+            <span class="badge bg-info-subtle text-info"><i class="bi bi-stars me-1"></i>AI Parsed</span>
+            {% else %}
+            <span class="badge bg-warning-subtle text-warning"><i class="bi bi-hourglass-split me-1"></i>No extraction</span>
+            {% endif %}
+          </div>
+          {% if extracted %}
+          <div class="table-responsive">
+            <table class="table table-modern mb-0">
+              <tbody>
+                {% for key, value in extracted.items() %}
+                {% if key not in ['items', 'taxes', 'price_outliers', 'duplicate_check', 'gst_validations', 'arithmetic_check', 'confidences'] %}
+                <tr>
+                  <th scope="row">{{ key.replace('_', ' ').title() }}</th>
+                  <td>{{ format_value(value) }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="empty-state py-5">
+            <span class="icon-circle gradient-1 mb-3"><i class="bi bi-robot"></i></span>
+            <h3 class="h6">No extracted fields available yet.</h3>
+            <p class="text-muted mb-0">Re-run processing or upload a clearer document to improve recognition.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="row g-4 mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent d-flex flex-wrap align-items-center justify-content-between gap-3">
+          <div>
+            <h2 class="h5 fw-semibold mb-0">Line Items</h2>
+            <p class="text-secondary mb-0 small">Granular breakdown of goods and services extracted from the Memos.</p>
+          </div>
+          <span class="badge bg-primary-subtle text-primary"><i class="bi bi-list-check me-1"></i>Total {{ extracted.get('items', [])|length }}</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-striped table-modern align-middle mb-0">
+            <thead class="table-light">
+              <tr><th>HSN</th><th>Description</th><th>Qty</th><th>Unit Price</th><th>GST%</th><th>Line Total</th></tr>
+            </thead>
+            <tbody>
+              {% for item in extracted.get('items', []) %}
+              <tr>
+                <td>{{ item.hsn }}</td>
+                <td>{{ item.description }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.unit_price }}</td>
+                <td>{{ item.gst_rate }}</td>
+                <td>{{ item.line_total }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="6" class="text-center text-muted py-4">No line items found</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="row g-4 mb-4">
+    <div class="col-xl-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent d-flex align-items-center justify-content-between">
+          <h3 class="h6 fw-semibold mb-0">Taxes</h3>
+          <i class="bi bi-cash-coin text-primary"></i>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-modern mb-0">
+              <thead><tr><th>Type</th><th>Rate</th><th>Amount</th></tr></thead>
+              <tbody>
+                {% for tax in extracted.get('taxes', []) %}
+                <tr><td>{{ tax.type }}</td><td>{{ tax.rate }}</td><td>{{ tax.amount }}</td></tr>
+                {% else %}
+                <tr><td colspan="3" class="text-center text-muted py-4">No tax information</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent d-flex align-items-center justify-content-between">
+          <h3 class="h6 fw-semibold mb-0">Duplicate Check</h3>
+          <i class="bi bi-app-indicator text-primary"></i>
+        </div>
+        <div class="card-body">
+          <div id="duplicate-check-card" data-endpoint="{{ url_for('admin.manual_duplicate_check', Memos_id=Memos.id) }}">
+            <p class="text-muted mb-0">Running duplicate checks...</p>
+          </div>
+          <noscript><p class="text-muted mb-0">Enable JavaScript to view duplicate analysis.</p></noscript>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="row g-4 mb-4">
+    <div class="col-xl-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent d-flex align-items-center justify-content-between">
+          <h3 class="h6 fw-semibold mb-0">GST Validations</h3>
+          <i class="bi bi-shield-check text-primary"></i>
+        </div>
+        <div class="card-body">
+          {% set gst_validations = extracted.get('gst_validations', {}) %}
+          {% if gst_validations %}
+          <div class="table-responsive">
+            <table class="table table-modern mb-0">
+              <thead><tr><th>Field</th><th>Status</th><th>Details</th></tr></thead>
+              <tbody>
+                {% for field, info in gst_validations.items() %}
+                <tr>
+                  <th scope="row">{{ field.replace('_', ' ').title() }}</th>
+                  <td>{{ info.status or (info.get('status') if info is mapping else '-') or '-' }}</td>
+                  <td>
+                    {% if info is mapping %}
+                      {% set ns = namespace(has_extra=False) %}
+                      {% for key, val in info.items() %}
+                        {% if key != 'status' and val is not none %}
+                          {% set ns.has_extra = True %}
+                        {% endif %}
+                      {% endfor %}
+                      {% if ns.has_extra %}
+                        <ul class="mb-0 ps-3">
+                          {% for key, val in info.items() %}
+                            {% if key != 'status' and val is not none %}
+                              <li><strong>{{ key.replace('_', ' ').title() }}:</strong> {{ format_value(val) }}</li>
+                            {% endif %}
+                          {% endfor %}
+                        </ul>
+                      {% else %}
+                        <span class="text-muted">—</span>
+                      {% endif %}
+                    {% else %}
+                      {{ format_value(info) }}
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted mb-0">GST validation data will appear once verification completes.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent d-flex align-items-center justify-content-between">
+          <h3 class="h6 fw-semibold mb-0">Arithmetic Check</h3>
+          <i class="bi bi-calculator text-primary"></i>
+        </div>
+        <div class="card-body">
+          {% set arithmetic = extracted.get('arithmetic_check') %}
+          {% if arithmetic %}
+          <ul class="list-unstyled info-list mb-0">
+            <li><span>Valid totals</span><strong>{{ 'Yes' if arithmetic.get('valid') else 'No' }}</strong></li>
+            {% if arithmetic.get('errors') %}
+            <li class="flex-column align-items-start"><span>Errors</span><strong>{{ format_value(arithmetic.get('errors')) }}</strong></li>
+            {% endif %}
+          </ul>
+          {% else %}
+          <p class="text-muted mb-0">No arithmetic validation results were captured.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="row g-4 mb-4">
+    <div class="col-xl-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent d-flex align-items-center justify-content-between">
+          <h3 class="h6 fw-semibold mb-0">Price Outliers</h3>
+          <i class="bi bi-broadcast text-primary"></i>
+        </div>
+        <div class="card-body">
+          {% set outliers = extracted.get('price_outliers') %}
+          {% if outliers %}
+          {% if outliers[0] is mapping %}
+          {% set headers = outliers[0].keys() %}
+          <div class="table-responsive">
+            <table class="table table-modern mb-0">
+              <thead>
+                <tr>
+                  {% for header in headers %}
+                  <th>{{ header.replace('_', ' ').title() }}</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in outliers %}
+                <tr>
+                  {% for header in headers %}
+                  <td>{{ format_value(row.get(header)) }}</td>
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <ul class="mb-0 ps-3">
+            {% for item in outliers %}
+            <li>{{ format_value(item) }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+          {% else %}
+          <p class="text-muted mb-0">No price outliers detected.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent d-flex align-items-center justify-content-between">
+          <h3 class="h6 fw-semibold mb-0">Confidence Scores</h3>
+          <i class="bi bi-activity text-primary"></i>
+        </div>
+        <div class="card-body">
+          {% set confidences = extracted.get('confidences') or Memos.confidence_scores %}
+          {% if confidences %}
+          <div class="table-responsive">
+            <table class="table table-modern mb-0">
+              <thead><tr><th>Field</th><th>Score</th></tr></thead>
+              <tbody>
+                {% for field, score in confidences.items() %}
+                <tr><th scope="row">{{ field.replace('_', ' ').title() }}</th><td>{{ score }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted mb-0">No confidence scores were recorded for this Memos.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+      <details>
+        <summary class="h6 fw-semibold text-primary">Raw Extracted JSON</summary>
+        <pre class="mt-3 mb-0">{{ extracted | tojson(indent=2) }}</pre>
+      </details>
+    </div>
+  </section>
+</main>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const card = document.getElementById('duplicate-check-card');
+    if (!card) {
+      return;
+    }
+    const endpoint = card.dataset.endpoint;
+    if (!endpoint) {
+      card.textContent = 'Duplicate check endpoint missing.';
+      card.classList.add('text-danger');
+      return;
+    }
+    const statusPill = document.getElementById('duplicate-status-pill');
+    fetch(endpoint, { headers: { 'Accept': 'application/json' } })
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error('Request failed with status ' + response.status);
+        }
+        return response.json();
+      })
+      .then(function (payload) {
+        if (!payload || payload.status !== 'success') {
+          throw new Error((payload && payload.message) || 'Duplicate check failed');
+        }
+        if (statusPill && typeof payload.is_duplicate === 'boolean') {
+          statusPill.dataset.duplicateState = payload.is_duplicate ? 'duplicate' : 'unique';
+          statusPill.classList.remove('bg-danger-subtle', 'text-danger', 'bg-success-subtle', 'text-success');
+          if (payload.is_duplicate) {
+            statusPill.classList.add('bg-danger-subtle', 'text-danger');
+          } else {
+            statusPill.classList.add('bg-success-subtle', 'text-success');
+          }
+          statusPill.innerHTML = '';
+          const icon = document.createElement('i');
+          icon.className = 'bi bi-intersect me-1';
+          statusPill.appendChild(icon);
+          statusPill.appendChild(document.createTextNode(payload.is_duplicate ? 'Duplicate' : 'Unique'));
+        }
+        const checks = Array.isArray(payload.checks) ? payload.checks : [];
+        if (!checks.length) {
+          card.innerHTML = '<p class="text-muted mb-0">No duplicate rules were evaluated.</p>';
+          return;
+        }
+        const list = document.createElement('ul');
+        list.className = 'list-unstyled info-list mb-0';
+        const statusLabelMap = {
+          duplicate: 'Duplicate detected',
+          unique: 'Unique',
+          insufficient_data: 'Not enough data'
+        };
+        const statusClassMap = {
+          duplicate: 'text-danger',
+          unique: 'text-success',
+          insufficient_data: 'text-muted'
+        };
+        checks.forEach(function (check) {
+          const item = document.createElement('li');
+          item.classList.add('flex-column', 'align-items-start');
+          const heading = document.createElement('span');
+          heading.textContent = check.title || check.rule || 'Duplicate rule';
+          item.appendChild(heading);
+          const status = document.createElement('strong');
+          const statusKey = check.status || 'unique';
+          status.textContent = statusLabelMap[statusKey] || statusKey;
+          status.className = (statusClassMap[statusKey] || 'text-muted') + ' mb-1';
+          item.appendChild(status);
+          if (check.reason) {
+            const reason = document.createElement('div');
+            reason.className = 'small text-muted';
+            reason.textContent = check.reason;
+            item.appendChild(reason);
+          }
+          if (check.checked_values) {
+            const entries = Object.entries(check.checked_values).filter(function (pair) {
+              return pair[1] !== null && pair[1] !== undefined && String(pair[1]).trim() !== '';
+            });
+            if (entries.length) {
+              const values = document.createElement('div');
+              values.className = 'small text-secondary';
+              values.textContent = 'Values: ' + entries.map(function (pair) {
+                return pair[0].replace(/_/g, ' ') + ' = ' + pair[1];
+              }).join(', ');
+              item.appendChild(values);
+            }
+          }
+          const matches = Array.isArray(check.matches) ? check.matches : [];
+          if (matches.length) {
+            const matchesList = document.createElement('ul');
+            matchesList.className = 'mb-0 ps-3 small';
+            matches.forEach(function (match) {
+              const matchItem = document.createElement('li');
+              const parts = [];
+              parts.push('Memos #' + match.Memos_id);
+              if (match.Memos_number) {
+                parts.push('(' + match.Memos_number + ')');
+              }
+              if (match.Memos_date) {
+                parts.push(match.Memos_date);
+              }
+              if (match.Memos_amount) {
+                parts.push('Amount ' + match.Memos_amount);
+              }
+              if (Array.isArray(match.overlap_po_numbers) && match.overlap_po_numbers.length) {
+                parts.push('PO ' + match.overlap_po_numbers.join(' / '));
+              } else if (Array.isArray(match.po_numbers) && match.po_numbers.length) {
+                parts.push('PO ' + match.po_numbers.join(' / '));
+              }
+              if (match.line_item_count !== undefined && match.line_item_count !== null) {
+                parts.push(match.line_item_count + ' line items');
+              }
+              const text = parts.join(' - ');
+              if (match.detail_url) {
+                const link = document.createElement('a');
+                link.href = match.detail_url;
+                link.textContent = text;
+                link.className = 'text-decoration-none';
+                matchItem.appendChild(link);
+              } else {
+                matchItem.textContent = text;
+              }
+              matchesList.appendChild(matchItem);
+            });
+            item.appendChild(matchesList);
+          }
+          list.appendChild(item);
+        });
+        card.replaceChildren(list);
+      })
+      .catch(function (error) {
+        const errorMessage = document.createElement('p');
+        errorMessage.className = 'text-danger mb-0';
+        errorMessage.textContent = 'Duplicate analysis failed: ' + error.message;
+        card.replaceChildren(errorMessage);
+      });
+  });
+</script>
+{% endblock %}

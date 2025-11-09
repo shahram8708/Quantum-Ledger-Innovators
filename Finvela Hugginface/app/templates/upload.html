@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block title %}Upload Memos{% endblock %}
+{% block content %}
+<main class="upload-page py-4 py-lg-5">
+  <section class="upload-hero card border-0 shadow-xl overflow-hidden mb-4">
+    <div class="card-body p-4 p-lg-5">
+      <div class="row g-4 align-items-center">
+        <div class="col-lg-6">
+          <span class="badge rounded-pill bg-primary-subtle text-primary mb-3"><i class="bi bi-cloud-arrow-up-fill me-2"></i>Memos Pipeline</span>
+          <h1 class="display-6 fw-bold text-primary mb-3">Deliver Memos to AI review in seconds.</h1>
+          <p class="lead text-secondary mb-4">Upload dealer PDFs or images, enrich metadata, and let Memos AI handle compliance checks, duplicate detection, and GST validation instantly.</p>
+          <ul class="timeline list-unstyled mb-0">
+            <li class="d-flex gap-3 align-items-start">
+              <span class="timeline-dot gradient-1"><i class="bi bi-file-earmark-arrow-up"></i></span>
+              <div>
+                <h3 class="h6 fw-semibold mb-1">1. Drop your Memos</h3>
+                <p class="text-secondary mb-0">Support for PDF, JPG, PNG up to 25&nbsp;MB with smart page splitting.</p>
+              </div>
+            </li>
+            <li class="d-flex gap-3 align-items-start">
+              <span class="timeline-dot gradient-2"><i class="bi bi-cpu"></i></span>
+              <div>
+                <h3 class="h6 fw-semibold mb-1">2. AI extraction &amp; checks</h3>
+                <p class="text-secondary mb-0">Structured data, GST validations, and risk scoring happen automatically.</p>
+              </div>
+            </li>
+            <li class="d-flex gap-3 align-items-start">
+              <span class="timeline-dot gradient-3"><i class="bi bi-graph-up"></i></span>
+              <div>
+                <h3 class="h6 fw-semibold mb-1">3. Actionable insights</h3>
+                <p class="text-secondary mb-0">Review analytics in your dashboard or trigger workflows via chat.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div class="col-lg-6">
+          <div class="upload-card card border-0 shadow-lg">
+            <div class="card-body p-4 p-lg-5">
+              <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                  <h2 class="h4 fw-semibold text-primary mb-1">Upload Memos</h2>
+                  <p class="text-secondary mb-0">Provide dealer details and attach the Memos file.</p>
+                </div>
+                <span class="icon-circle gradient-1"><i class="bi bi-shield-check"></i></span>
+              </div>
+              <form method="post" enctype="multipart/form-data" action="{{ url_for('upload.upload') }}" class="needs-validation" novalidate>
+                <div class="mb-3">
+                  <label for="dealer_name" class="form-label">DealerName</label>
+                  <input type="text" class="form-control form-control-lg" id="dealer_name" name="dealer_name" placeholder="Ex: Horizon Traders" required>
+                  <div class="invalid-feedback">Please enter the dealer name.</div>
+                </div>
+                <div class="mb-3">
+                  <label for="gstin" class="form-label">DealerGSTIN <span class="text-secondary fw-normal">(optional)</span></label>
+                  <input type="text" class="form-control form-control-lg" id="gstin" name="gstin" placeholder="22AAAAA0000A1Z5">
+                </div>
+                <div class="mb-3">
+                  <label for="phone" class="form-label">WhatsApp Number <span class="text-secondary fw-normal">(optional)</span></label>
+                  <div class="input-group input-group-lg">
+                    <span class="input-group-text border-0 bg-transparent"><i class="bi bi-whatsapp"></i></span>
+                    <input type="text" class="form-control border-start-0" id="phone" name="phone" placeholder="whatsapp:+91...">
+                  </div>
+                </div>
+                <div class="mb-4">
+                  <label for="file" class="form-label">Memos File</label>
+                  <div class="upload-dropzone p-4 rounded-4 border border-dashed text-center">
+                    <i class="bi bi-cloud-arrow-up display-6 text-primary mb-3 d-block"></i>
+                    <p class="mb-2 fw-semibold">Drag &amp; drop or click to browse</p>
+                    <p class="text-secondary small mb-3">Accepted: PDF, JPG, PNG &bull; Max size 25&nbsp;MB</p>
+                    <input class="form-control form-control-lg" type="file" id="file" name="file" accept="application/pdf,image/*" required>
+                  </div>
+                  <div class="invalid-feedback d-block">Attach a valid Memos file (PDF or image).</div>
+                </div>
+                <div class="d-grid gap-3">
+                  <button type="submit" class="btn btn-gradient btn-lg shadow-sm">
+                    <i class="bi bi-upload me-2"></i>Upload &amp; Process
+                  </button>
+                  <small class="text-secondary text-center">Processing typically completes in under 30 seconds.</small>
+                </div>
+              </form>
+            </div>
+            <div class="card-footer bg-light-subtle py-3 px-4">
+              <div class="d-flex flex-wrap justify-content-between gap-3 small text-secondary">
+                <span><i class="bi bi-lock-fill me-2 text-primary"></i>256-bit encrypted transfer</span>
+                <span><i class="bi bi-check2-circle me-2 text-success"></i>Automated compliance checks</span>
+                <span><i class="bi bi-gear-wide-connected me-2 text-primary"></i>Audited every upload</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="row g-4">
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-4">
+          <h3 class="h6 fw-semibold mb-3">Need a refresh?</h3>
+          <p class="text-secondary mb-4">Dealers can upload via a secure link. Share the unique upload URL to keep collections moving.</p>
+          <a class="btn btn-outline-primary w-100" href="{{ url_for('upload.index') }}"><i class="bi bi-link-45deg me-2"></i>Copy public link</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-4">
+          <h3 class="h6 fw-semibold mb-3">File best practices</h3>
+          <ul class="list-unstyled upload-tips mb-0">
+            <li><i class="bi bi-dash-lg me-2 text-primary"></i>Prefer original PDFs for highest fidelity.</li>
+            <li><i class="bi bi-dash-lg me-2 text-primary"></i>Ensure Memos number is clearly visible.</li>
+            <li><i class="bi bi-dash-lg me-2 text-primary"></i>Multi-page Memos are supported automatically.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-4">
+          <h3 class="h6 fw-semibold mb-3">Live support</h3>
+          <p class="text-secondary mb-4">Chat with our AI assistant or escalate to a success engineer for tricky uploads.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}
