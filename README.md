@@ -621,6 +621,6 @@ Checklist:
 ## Credits
 
 - **Shah Ram** – Full Stack Developer  
-- **Nisarg Parmar** – Backend Developer  
-- **Milan Gohil** – AI/ML Developer  
+- **Nisarg Parmar** – AI/ML Developer  
+- **Milan Gohil** – Backend Developer  
 - **Mahir Sanghavi** – Frontend Developer

@@ -365,6 +365,6 @@ Add translations under translations, run `pybabel` commands, and set `BABEL_SUPP
 
 ## Credits / Authors
 - **Shah Ram** – Full Stack Developer
-- **Nisarg Parmar** – Backend Developer
-- **Milan Gohil** – AI/ML Developer
+- **Nisarg Parmar** – AI/ML Developer
+- **Milan Gohil** – Backend Developer
 - **Mahir Sanghavi** – Frontend Developer

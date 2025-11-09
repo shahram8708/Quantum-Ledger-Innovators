@@ -369,6 +369,6 @@ curl -X POST http://localhost:8000/invoices/123/counterfactual \
 
 ## Credits / Authors
 - **Shah Ram** – Full Stack Developer
-- **Nisarg Parmar** – Backend Developer
-- **Milan Gohil** – AI/ML Developer
+- **Nisarg Parmar** – AI/ML Developer
+- **Milan Gohil** – Backend Developer
 - **Mahir Sanghavi** – Frontend Developer
