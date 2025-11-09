@@ -23,6 +23,28 @@ Finvela accelerates finance, compliance, and audit workflows by automating invoi
 
 ---
 
+## Login / User Authentication Guide
+Authentication requires verified email and valid credentials. Configure at least one admin via the CLI command above, then document the credentials privately.
+
+For local testing we ship two sample accounts you can use immediately after running migrations:
+
+- **Organization Admin (full access)** – use the first email/password pair below to experience the admin flows, seat management, and billing setup.
+- **Team Member (standard seat)** – use the second pair to validate member permissions, invoice uploads, chat, etc.
+
+```
+EMAIL_1=shahram8708@gmail.com
+PASSWORD_1=shahram8708@
+
+EMAIL_2=shahrampravesh4@gmail.com
+PASSWORD_2=shahrampravesh4@
+```
+
+- Admins approve new members and manage billing.
+- Members can be invited via the team management screen.
+- OTP verification is sent via email; configure SMTP settings (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`) for production.
+
+---
+
 ## Key Features
 
 - Multi-channel ingestion: drag-and-drop uploads, filesystem watchers, IMAP polling, and Celery-powered background ingestion tasks.
