@@ -17,9 +17,9 @@ Finvela is an AI-native expense validation platform aimed at finance, compliance
 Run the project locally (see “How to Run”) or deploy to your preferred infrastructure for a self-hosted demo.
 
 ## Screenshots / Example Outputs
-- ![Dashboard overview](docs/screenshots/dashboard.png)
-- ![Risk waterfall](docs/screenshots/risk-report.png)
-- ![Vendor drift insight](docs/screenshots/vendor-drift.png)
+![Dashboard overview](docs/screenshots/dashboard.png)
+![Risk waterfall](docs/screenshots/risk-report.png)
+![Vendor drift insight](docs/screenshots/vendor-drift.png)
 
 ## Technologies & Libraries Used
 - **Framework**: Flask, Flask-Login, Flask-WTF, Flask-Babel, Flask-Limiter, Flask-Caching
